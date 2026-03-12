@@ -1,4 +1,6 @@
 from socket import *
+import ssl
+import base64
 
 msg = "\r\n I love computer networks!"
 endmsg = "\r\n.\r\n"
@@ -18,8 +20,9 @@ print(recv)
 if recv[:3] != '220':
     print('220 reply not received from server.')
 
-sender = '23thomasec@csu.fullerton.edu'
-receiever = 'ecthomas05@gmail.com'
+receiever = 'e07642704@gmail.com'
+sender = 'ecthomas05@gmail.com'
+password = input('Enter Google App Password: ')
 
 # Send HELO command and print server response.
 heloCommand = 'HELO Alice\r\n'
@@ -28,6 +31,47 @@ recv1 = clientSocket.recv(1024).decode()
 print(recv1)
 if recv1[:3] != '250':
     print('250 reply not received from server.')
+
+# ----- Optional 1 (TLS/SSL) ----
+
+# Request STARTTLS from the server
+starttlsCommand = 'STARTTLS\r\n'
+clientSocket.send(starttlsCommand.encode())
+recv_tls = clientSocket.recv(1024).decode()
+print(recv_tls)
+if recv_tls[:3] != '220':
+    print('220 reply not received from server for STARTTLS.')
+
+# Secure the socket using TLS/SSL
+context = ssl.create_default_context()
+clientSocket = context.wrap_socket(clientSocket, server_hostname=mailserver)
+
+# Send HELO again over the secure connection
+clientSocket.send(heloCommand.encode())
+recv_helo = clientSocket.recv(1024).decode()
+print(recv_helo)
+
+# Send AUTH LOGIN command
+clientSocket.send('AUTH LOGIN\r\n'.encode())
+recv_auth = clientSocket.recv(1024).decode()
+print(recv_auth)
+
+# Send Base64 encoded username
+username_b64 = base64.b64encode(sender.encode()).decode() + '\r\n'
+clientSocket.send(username_b64.encode())
+recv_user = clientSocket.recv(1024).decode()
+print(recv_user)
+
+# Send Base64 encoded password
+password_b64 = base64.b64encode(password.encode()).decode() + '\r\n'
+clientSocket.send(password_b64.encode())
+recv_pass = clientSocket.recv(1024).decode()
+print(recv_pass)
+if recv_pass[:3] != '235':
+    print('235 Authentication failed. Check your App Password.')
+    raise Exception('Incorrect Password')
+
+# ----- End of Optional 1 -------
 
 # Send MAIL FROM command and print server response.
 # Fill in start
@@ -59,8 +103,8 @@ if recv4[:3] != '354':
 # Send message data.
 # Fill in start
 subject = 'Subject: ' + input('Subject: ') + '\r\n'
-receiver_ = 'To: <' + input('To: ') + '>\r\n'
-sender_ = 'From: <' + input('From: ') + '>\r\n'
+receiver_ = 'To: <' + receiever + '>\r\n'
+sender_ = 'From: <' + sender + '>\r\n'
 
 email = subject + receiver_ + sender_ + msg
 clientSocket.send(email.encode())
