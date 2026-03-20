@@ -20,7 +20,7 @@ print(recv)
 if recv[:3] != '220':
     print('220 reply not received from server.')
 
-receiever = 'e07642704@gmail.com'
+receiver = 'e07642704@gmail.com'
 sender = 'ecthomas05@gmail.com'
 password = input('Enter Google App Password: ')
 
@@ -84,7 +84,7 @@ if recv2[:3] != '250':
 
 # Send RCPT TO command and print server response.
 # Fill in start
-rcpttoCommand = f'RCPT TO:<{receiever}>\r\n'
+rcpttoCommand = f'RCPT TO:<{receiver}>\r\n'
 clientSocket.send(rcpttoCommand.encode())
 recv3 = clientSocket.recv(1024).decode()
 if recv3[:3] != '250':
@@ -102,11 +102,30 @@ if recv4[:3] != '354':
 
 # Send message data.
 # Fill in start
-subject = 'Subject: ' + input('Subject: ') + '\r\n'
-receiver_ = 'To: <' + receiever + '>\r\n'
-sender_ = 'From: <' + sender + '>\r\n'
+subject_input = input('Subject: ')
 
-email = subject + receiver_ + sender_ + msg
+# Converted image to base64 
+with open('image.jpg', 'rb') as f:
+    img_b64 = base64.b64encode(f.read()).decode()
+
+# MIME email for image support for Optional 2
+email = (
+    f'Subject: {subject_input}\r\n'
+    f'To: {receiver}\r\n'
+    f'From: {sender}\r\n'
+    f'MIME-Version: 1.0\r\n'
+    f'Content-Type: multipart/mixed; boundary="B"\r\n\r\n'
+    f'--B\r\n'
+    f'Content-Type: text/plain\r\n\r\n'
+    f'{msg}\r\n\r\n'
+    f'--B\r\n'
+    f'Content-Type: image/jpeg; name="image.jpg"\r\n'
+    f'Content-Transfer-Encoding: base64\r\n'
+    f'Content-Disposition: attachment; filename="image.jpg"\r\n\r\n'
+    f'{img_b64}\r\n\r\n'
+    f'--B--\r\n'
+)
+
 clientSocket.send(email.encode())
 # Fill in end
 
